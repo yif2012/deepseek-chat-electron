@@ -24,6 +24,7 @@
 - Element Plus
 - Markdown-it
 - Highlight.js
+- Nodejs > 18.20
 
 ## 开发环境设置
 
@@ -95,6 +96,27 @@ pnpm electron:build
 ## 注意事项
 
 1. 首次使用需要设置 DeepSeek API Key
+
+   ### DeepSeek API Key 申请流程
+
+   1. 访问 DeepSeek API 官网 (https://platform.deepseek.com/)
+
+   2. 点击右上角"Sign Up"注册账号
+
+   3. 登录后进入控制台(Console)页面
+
+   4. 在左侧菜单找到"API Keys"选项
+
+   5. 点击"Create API Key"创建新的 API Key
+
+   6. 复制生成的 API Key 并妥善保存
+
+   注意:
+
+   - API Key 仅显示一次,请务必保存
+   - 免费账户每月有一定额度限制
+   - 请勿泄露或分享你的 API Key
+
 2. 应用使用无边框窗口，可通过顶部栏拖动
 3. 窗口置顶功能可通过右上角图标切换
 

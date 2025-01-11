@@ -94,7 +94,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, reactive, ref, onUnmounted, computed } from 'vue';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from '@/utils/highlight';
 import 'highlight.js/styles/atom-one-dark.css';
 import K from '/electron/APP_KEY?raw';
 import { Setting, Lock, Unlock, CopyDocument, Top, Loading } from '@element-plus/icons-vue';
@@ -409,6 +409,7 @@ h1 {
   padding: 1rem;
   text-align: left;
   scroll-behavior: smooth;
+
   /* 滚动条整体部分 */
   &::-webkit-scrollbar {
     width: 8px;
@@ -419,12 +420,14 @@ h1 {
   &::-webkit-scrollbar-track {
     background: #292a2d;
     border-radius: 4px;
+    margin: 4px 0; // 添加上下边距，让滚动条两端显示圆角
   }
 
   /* 滚动条滑块 */
   &::-webkit-scrollbar-thumb {
     background: #4a4a4a;
     border-radius: 4px;
+    border: 2px solid #292a2d; // 添加边框，让滑块看起来更圆润
     transition: background 0.3s ease;
 
     &:hover {
