@@ -18,24 +18,28 @@ protocol.registerSchemesAsPrivileged([
 // 获取 APP_KEY 文件的路径
 // 开发环境：使用项目目录下的文件
 // 生产环境：使用用户数据目录下的文件
-function getAppKeyPath() {
+function getAppKeyPath(fileName) {
   if (app.isPackaged) {
-    return path.join(app.getPath('userData'), 'APP_KEY');
+    return path.join(app.getPath('userData'), fileName);
   }
-  return path.join(__dirname, './APP_KEY');
+  return path.join(__dirname, `./${fileName}`);
 }
 
 // 确保 APP_KEY 文件存在
 // 如果文件不存在，则创建一个空文件
 function ensureAppKeyFile() {
-  const appKeyPath = getAppKeyPath();
-  if (!fs.existsSync(appKeyPath)) {
-    try {
-      fs.writeFileSync(appKeyPath, '');
-    } catch (error) {
-      console.error('Failed to create APP_KEY file:', error);
+  const paths = [getAppKeyPath('APP_KEY'), getAppKeyPath('sessions.json')];
+  console.log('paths', paths);
+  paths.forEach((path) => {
+    console.log('path', path);
+    if (!fs.existsSync(path)) {
+      try {
+        fs.writeFileSync(path, '');
+      } catch (error) {
+        console.error(`Failed to create ${path} file:`, error);
+      }
     }
-  }
+  });
 }
 
 // 创建主窗口
@@ -110,11 +114,20 @@ app.on('window-all-closed', () => {
 // 处理获取 API Key 的请求
 ipcMain.handle('get-app-key', () => {
   try {
-    return fs.readFileSync(getAppKeyPath(), 'utf-8');
+    return fs.readFileSync(getAppKeyPath('APP_KEY'), 'utf-8');
   } catch (error) {
     console.error('Failed to read APP_KEY:', error);
     return '';
   }
+});
+
+ipcMain.handle('get-sessions', () => {
+  const sessions = fs.readFileSync(getAppKeyPath('sessions.json'), 'utf-8');
+  console.log('sessions', sessions);
+  if (sessions) {
+    return JSON.parse(sessions);
+  }
+  return [];
 });
 
 // 处理窗口置顶的请求

@@ -1,6 +1,6 @@
 <template>
   <div class="chat-container">
-    <div class="top-bar"></div>
+    <div class="top-bar">{{ title }}</div>
     <!-- 顶部标题栏 -->
     <div class="header">
       <h3>新对话</h3>
@@ -19,9 +19,7 @@
     <div class="chat-content" v-if="!hasAppKey">
       <div class="message system">
         <div class="avatar">
-          <img
-            src="https://himg.bdimg.com/sys/portraitn/item/public.1.9a8e53e7.iaOFX4hNCDVjKfyipptNYQ"
-          />
+          <img :src="avatar.system" />
         </div>
         <div class="message-content">
           <p>
@@ -36,10 +34,7 @@
         <!-- 跳过系统消息 -->
         <div :class="['message', msg.role]">
           <div class="avatar">
-            <img
-              src="https://himg.bdimg.com/sys/portraitn/item/public.1.9a8e53e7.iaOFX4hNCDVjKfyipptNYQ"
-              :alt="msg.role"
-            />
+            <img :src="avatar[msg.role as keyof typeof avatar]" :alt="msg.role" />
           </div>
           <div class="message-content">
             <p v-html="renderMarkdown(msg.content)"></p>
@@ -96,10 +91,19 @@ import { nextTick, onMounted, reactive, ref, onUnmounted, computed } from 'vue';
 import MarkdownIt from 'markdown-it';
 import hljs from '@/utils/highlight';
 import 'highlight.js/styles/atom-one-dark.css';
-import K from '/electron/APP_KEY?raw';
 import { Setting, Lock, Unlock, CopyDocument, Top, Loading } from '@element-plus/icons-vue';
 import { ElSpace, ElIcon, ElMessage, ElMessageBox } from 'element-plus';
+import user from '@/assets/images/avatar.png';
+import robot from '@/assets/images/robot.png';
 
+const K = localStorage.getItem('APP_KEY') || '';
+const inElectron = window.ipcRenderer !== undefined;
+const title = import.meta.env.VITE_APP_TITLE;
+const avatar = ref({
+  user,
+  assistant: robot,
+  system: robot,
+});
 const chatContentRef = ref<HTMLDivElement | null>(null);
 const inputMessageRef = ref<HTMLTextAreaElement | null>(null);
 const md: MarkdownIt = new MarkdownIt({
@@ -159,7 +163,7 @@ const handleLinkClick = (event: MouseEvent) => {
 };
 
 onMounted(() => {
-  if (window.ipcRenderer) {
+  if (inElectron) {
     window.ipcRenderer.invoke('get-app-key').then((appKey: string) => {
       API_KEY.value = appKey;
     });
@@ -191,7 +195,7 @@ async function chat(message: string) {
 
   const data = {
     messages,
-    model: 'deepseek-chat',
+    model: 'deepseek-reasoner',
     frequency_penalty: 0,
     max_tokens: 2048,
     presence_penalty: 0,
@@ -251,8 +255,10 @@ async function chat(message: string) {
 
         try {
           const parsed = JSON.parse(message);
-          if (parsed.choices[0].delta.content) {
-            result += parsed.choices[0].delta.content;
+          const content =
+            parsed.choices[0].delta.content || parsed.choices[0].delta.reasoning_content;
+          if (content) {
+            result += content;
             chatContent.value = result;
             scrollToBottom();
           }
@@ -263,6 +269,7 @@ async function chat(message: string) {
     }
   } catch (error) {
     console.error('Error:', error);
+    ElMessage.error('请求失败，请检查API Key是否正确');
   } finally {
     isLoading.value = false;
     nextTick(() => {
@@ -302,7 +309,11 @@ const editAppKey = () => {
     console.log(value);
     if (value) {
       API_KEY.value = value;
-      window.ipcRenderer?.invoke('edit-app-key', value);
+      if (inElectron) {
+        window.ipcRenderer.invoke('edit-app-key', value);
+      } else {
+        localStorage.setItem('APP_KEY', value);
+      }
     }
   });
 };
@@ -318,6 +329,7 @@ onUnmounted(() => {
 <style scoped lang="less">
 .top-bar {
   height: 30px;
+  line-height: 30px;
   background-color: #292a2d;
   width: 100%;
   cursor: move;
@@ -341,6 +353,7 @@ onUnmounted(() => {
 }
 
 :deep(p) {
+  text-align: left;
   margin: 4px 0;
 }
 
@@ -480,7 +493,7 @@ h1 {
 
 .message-content p {
   background: #424242;
-  padding: 1rem;
+  padding: 0.2rem 1rem;
   border-radius: 8px;
   display: inline-block;
   max-width: 100%;
@@ -492,7 +505,7 @@ h1 {
   content: '';
   position: absolute;
   left: -8px;
-  top: 14px;
+  top: 10px;
   width: 0;
   height: 0;
   border-top: 8px solid transparent;
@@ -504,7 +517,7 @@ h1 {
   content: '';
   position: absolute;
   right: -8px;
-  top: 14px;
+  top: 10px;
   width: 0;
   height: 0;
   border-top: 8px solid transparent;
@@ -517,7 +530,6 @@ h1 {
 }
 
 .message-actions {
-  margin-top: 0.5rem;
   display: flex;
   gap: 0.5rem;
   justify-content: flex-start;
